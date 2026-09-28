@@ -1,11 +1,25 @@
+from consultar_sefaz import buscar_xml_sefaz, processar_resposta_xml
+
+# CONFIGURAÇÕES DO SEU CERTIFICADO E LOJA
+CAMINHO_CERTIFICADO = "C:/Users/Eder/OneDrive/Documents/certificado.pfx"  # Caminho para o arquivo .pfx
+SENHA_CERTIFICADO = "04031995"  # Senha do certificado
+CNPJ_LOJA = "20064552000170"  # Apenas números
+
 def buscar_itens_nota(chave_acesso: str) -> list[dict]:
     """
-    Retorna a lista de produtos contidos na nota fiscal.
-    Cada item possui código, descrição, quantidade e SKU interno.
+    Busca os itens diretamente na SEFAZ via Certificado A1.
     """
-    # Exemplo de itens retornados da nota fiscal
-    return [
-        {"codigo": "101", "descricao": "Filtro de Oleo Tecfil PSL55", "qtd": 2, "sku": "PEC-101"},
-        {"codigo": "204", "descricao": "Pastilha de Freio Dianteira Cobreq", "qtd": 1, "sku": "PEC-204"},
-        {"codigo": "512", "descricao": "Vela de Ignação NGK BKR6E", "qtd": 4, "sku": "PEC-512"},
-    ]
+    print("-> Enviando autenticação e chave para a SEFAZ...")
+    xml_resposta = buscar_xml_sefaz(
+        chave_acesso, 
+        CNPJ_LOJA, 
+        CAMINHO_CERTIFICADO, 
+        SENHA_CERTIFICADO
+    )
+    
+    produtos = processar_resposta_xml(xml_resposta)
+    
+    if not produtos:
+        raise Exception("Nenhum produto foi retornado pela SEFAZ para esta chave de acesso.")
+        
+    return produtos

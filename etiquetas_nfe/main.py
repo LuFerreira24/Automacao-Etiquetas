@@ -7,24 +7,24 @@ def main():
     print("   SISTEMA DE ETIQUETAGEM DE PEÇAS POR QR CODE    ")
     print("==================================================")
     
-    # Simula a leitura do leitor de código de barras USB/Câmera
+    # 1. Recebe a URL do leitor de QR Code
     qr_input = input("\nEscaneie ou cole a URL do QR Code da Nota Fiscal: ").strip()
     
     try:
-        # 1. Extrai a chave de 44 dígitos
+        # 2. Extrai os 44 dígitos
         chave = extrair_chave_nfe(qr_input)
         print(f"-> Chave de Acesso identificada: {chave}")
         
-        # 2. Busca os produtos da nota
-        print("-> Buscando produtos da nota fiscal...")
+        # 3. Consulta a SEFAZ via Certificado Digital A1
+        print("-> Conectando à SEFAZ para buscar os produtos reais...")
         produtos = buscar_itens_nota(chave)
-        print(f"-> Encontrados {len(produtos)} produtos diferentes.")
+        print(f"-> Sucesso! {len(produtos)} produto(s) encontrado(s) na nota.")
         
-        # 3. Gera o arquivo PDF
+        # 4. Gera o PDF das etiquetas
         criar_pdf_etiquetas(produtos)
         
     except Exception as e:
-        print(f"❌ Erro ao processar: {e}")
+        print(f"\n❌ Erro ao processar a nota fiscal: {e}")
 
 if __name__ == "__main__":
     main()
