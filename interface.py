@@ -17,7 +17,7 @@ class AppEtiquetas(ctk.CTk):
 
         # Configurações da janela principal
         self.title("Gerador de Etiquetas de Peças - NF-e")
-        self.geometry("820x640")
+        self.geometry("880x700")
         self.resizable(True, True)
 
         self.caminho_xml_selecionado = ""
@@ -34,7 +34,6 @@ class AppEtiquetas(ctk.CTk):
         style = ttk.Style()
         style.theme_use("default")
         
-        # Cores para o tema
         bg_color = "#2b2b2b" if ctk.get_appearance_mode() == "Dark" else "#ffffff"
         fg_color = "#ffffff" if ctk.get_appearance_mode() == "Dark" else "#000000"
         selected_bg = "#1f538d"
@@ -66,12 +65,12 @@ class AppEtiquetas(ctk.CTk):
 
         self.lbl_subtitulo = ctk.CTkLabel(
             self, 
-            text="Importe o XML, ajuste o Código Interno, Nome ou Qtd e gere as etiquetas em PDF", 
+            text="Importe o XML ou adicione manualmente, edite os dados e gere as etiquetas em PDF", 
             font=ctk.CTkFont(size=12)
         )
         self.lbl_subtitulo.pack(pady=(0, 10))
 
-        # --- Topo: Seleção de Arquivo ---
+        # --- Topo: Seleção de Arquivo, Limpar e Adicionar Manual ---
         self.frame_top = ctk.CTkFrame(self)
         self.frame_top.pack(padx=20, fill="x", pady=5)
 
@@ -82,12 +81,31 @@ class AppEtiquetas(ctk.CTk):
             fg_color="#1f538d",
             hover_color="#14375e"
         )
-        self.btn_selecionar.pack(side="left", padx=15, pady=12)
+        self.btn_selecionar.pack(side="left", padx=8, pady=12)
+
+        self.btn_novo_manual = ctk.CTkButton(
+            self.frame_top, 
+            text="➕ Adicionar Item Manual", 
+            command=self.preparar_novo_item,
+            fg_color="#27ae60",
+            hover_color="#1e8449"
+        )
+        self.btn_novo_manual.pack(side="left", padx=5, pady=12)
+
+        self.btn_limpar_tudo = ctk.CTkButton(
+            self.frame_top, 
+            text="🔄 Limpar Tudo", 
+            command=self.limpar_tudo_confirmacao,
+            fg_color="#7f8c8d",
+            hover_color="#616a6b",
+            width=100
+        )
+        self.btn_limpar_tudo.pack(side="left", padx=5, pady=12)
 
         self.lbl_arquivo = ctk.CTkLabel(
             self.frame_top, 
             text="Nenhum arquivo XML selecionado", 
-            font=ctk.CTkFont(size=12, slant="italic")
+            font=ctk.CTkFont(size=11, slant="italic")
         )
         self.lbl_arquivo.pack(side="left", padx=10, fill="x", expand=True)
 
@@ -108,21 +126,19 @@ class AppEtiquetas(ctk.CTk):
         self.tree.column("nome", width=480, anchor="w")
         self.tree.column("qtd", width=60, anchor="center")
 
-        # Scrollbar vertical para a tabela
         scrollbar = ttk.Scrollbar(self.frame_tabela, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
 
         self.tree.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=10)
         scrollbar.pack(side="right", fill="y", padx=(0, 10), pady=10)
 
-        # Evento ao selecionar item na tabela
         self.tree.bind("<<TreeviewSelect>>", self.ao_selecionar_item)
 
         # --- Base: Painel de Edição de Dados ---
         self.frame_edicao = ctk.CTkFrame(self)
         self.frame_edicao.pack(padx=20, pady=5, fill="x")
 
-        # Linha 1 de Edição: Código Interno e Quantidade
+        # Linha 1: Cód. Interno e Qtd
         lbl_ed_int = ctk.CTkLabel(self.frame_edicao, text="Cód. Interno:", font=ctk.CTkFont(size=11, weight="bold"))
         lbl_ed_int.grid(row=0, column=0, padx=(10, 2), pady=8, sticky="e")
         
@@ -135,23 +151,37 @@ class AppEtiquetas(ctk.CTk):
         self.entry_qtd = ctk.CTkEntry(self.frame_edicao, width=70)
         self.entry_qtd.grid(row=0, column=3, padx=(0, 10), pady=8, sticky="w")
 
-        # Linha 2 de Edição: Nome/Descrição e Botão Salvar
+        # Linha 2: Descrição e Botões de Ação
         lbl_ed_nome = ctk.CTkLabel(self.frame_edicao, text="Descrição:", font=ctk.CTkFont(size=11, weight="bold"))
         lbl_ed_nome.grid(row=1, column=0, padx=(10, 2), pady=(0, 10), sticky="e")
 
-        self.entry_nome = ctk.CTkEntry(self.frame_edicao, width=450)
+        self.entry_nome = ctk.CTkEntry(self.frame_edicao, width=420)
         self.entry_nome.grid(row=1, column=1, columnspan=3, padx=(0, 15), pady=(0, 10), sticky="w")
 
+        # Container para botões Salvar / Apagar
+        self.frame_botoes_acao = ctk.CTkFrame(self.frame_edicao, fg_color="transparent")
+        self.frame_botoes_acao.grid(row=0, column=4, rowspan=2, padx=(0, 10), pady=5, sticky="nsew")
+
         self.btn_salvar_item = ctk.CTkButton(
-            self.frame_edicao, 
-            text="💾 Salvar Item", 
+            self.frame_botoes_acao, 
+            text="💾 Salvar", 
             command=self.salvar_alteracao_item,
-            width=120,
+            width=100,
             fg_color="#e67e22",
-            hover_color="#d35400",
+            hover_color="#d35400"
+        )
+        self.btn_salvar_item.pack(pady=2, fill="x")
+
+        self.btn_excluir_item = ctk.CTkButton(
+            self.frame_botoes_acao, 
+            text="🗑️ Excluir", 
+            command=self.excluir_item_selecionado,
+            width=100,
+            fg_color="#c0392b",
+            hover_color="#962d22",
             state="disabled"
         )
-        self.btn_salvar_item.grid(row=1, column=4, padx=(0, 10), pady=(0, 10), sticky="w")
+        self.btn_excluir_item.pack(pady=2, fill="x")
 
         # --- Rodapé: Status e Gerar PDF ---
         self.frame_footer = ctk.CTkFrame(self, fg_color="transparent")
@@ -178,9 +208,23 @@ class AppEtiquetas(ctk.CTk):
         )
         self.btn_gerar.pack(side="right", padx=10)
 
-    # --- Lógica da Aplicação ---
+    # --- Lógica do Sistema ---
 
     def selecionar_arquivo(self):
+        # Se já existirem produtos carregados, pergunta o que fazer
+        limpar = True
+        if self.produtos:
+            resposta = messagebox.askyesnocancel(
+                "Novo XML",
+                "Já existem itens na lista.\n\n"
+                "• Clique em 'Sim' para LIMPAR a lista e abrir o novo XML.\n"
+                "• Clique em 'Não' para ADICIONAR os novos itens à lista atual.\n"
+                "• Clique em 'Cancelar' para interromper."
+            )
+            if resposta is None:  # Clicou em Cancelar
+                return
+            limpar = resposta
+
         caminho = filedialog.askopenfilename(
             title="Selecione o arquivo XML da NF-e",
             filetypes=[("Arquivos XML", "*.xml"), ("Todos os arquivos", "*.*")]
@@ -188,16 +232,14 @@ class AppEtiquetas(ctk.CTk):
         if caminho:
             self.caminho_xml_selecionado = caminho
             nome_arquivo = os.path.basename(caminho)
-            self.lbl_arquivo.configure(text=f"📄 {nome_arquivo}", font=ctk.CTkFont(size=12, weight="bold"))
-            
-            # Carregar e exibir produtos
-            self.carregar_produtos_xml()
+            self.lbl_arquivo.configure(text=f"📄 {nome_arquivo}", font=ctk.CTkFont(size=11, weight="bold"))
+            self.carregar_produtos_xml(limpar=limpar)
 
-    def carregar_produtos_xml(self):
+    def carregar_produtos_xml(self, limpar=True):
         try:
-            self.produtos = processar_xml_local(self.caminho_xml_selecionado)
+            novos_produtos = processar_xml_local(self.caminho_xml_selecionado)
             
-            for prod in self.produtos:
+            for prod in novos_produtos:
                 if 'nome' not in prod or not prod['nome']:
                     prod['nome'] = prod.get('descricao', '')
                 prod['descricao'] = prod['nome']
@@ -205,33 +247,54 @@ class AppEtiquetas(ctk.CTk):
                 if 'cod_interno' not in prod or not prod['cod_interno']:
                     prod['cod_interno'] = prod.get('codigo', '')
 
-            self.atualizar_tabela()
-
-            if self.produtos:
-                total_etiquetas = sum(p['qtd'] for p in self.produtos)
-                self.lbl_status.configure(
-                    text=f"Total: {len(self.produtos)} item(ns) | {total_etiquetas} etiqueta(s)",
-                    text_color="#1f538d"
-                )
-                self.btn_gerar.configure(state="normal")
+            if limpar:
+                self.produtos = novos_produtos
             else:
-                messagebox.showwarning("Aviso", "Nenhum produto foi localizado no XML.")
+                self.produtos.extend(novos_produtos)
+
+            self.atualizar_tabela()
+            self.atualizar_resumo_e_botoes()
+            self.preparar_novo_item()
 
         except Exception as e:
             messagebox.showerror("Erro ao LER XML", f"Ocorreu um erro ao ler o XML:\n{e}")
 
+    def limpar_tudo_confirmacao(self):
+        if self.produtos:
+            if messagebox.askyesno("Confirmar Limpeza", "Deseja remover todos os itens e limpar a tela?"):
+                self.resetar_estado()
+
+    def resetar_estado(self):
+        self.produtos = []
+        self.caminho_xml_selecionado = ""
+        self.item_selecionado_index = None
+        self.lbl_arquivo.configure(text="Nenhum arquivo XML selecionado", font=ctk.CTkFont(size=11, slant="italic"))
+        self.atualizar_tabela()
+        self.atualizar_resumo_e_botoes()
+        self.preparar_novo_item()
+
     def atualizar_tabela(self):
-        # Limpar tabela
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Preencher tabela
         for idx, p in enumerate(self.produtos, start=1):
             cod_interno = p.get('cod_interno', '')
             nome = p.get('nome', '')
             qtd = p.get('qtd', 1)
             
             self.tree.insert("", "end", iid=idx-1, values=(idx, cod_interno, nome, qtd))
+
+    def atualizar_resumo_e_botoes(self):
+        if self.produtos:
+            total_etiquetas = sum(p['qtd'] for p in self.produtos)
+            self.lbl_status.configure(
+                text=f"Total: {len(self.produtos)} item(ns) | {total_etiquetas} etiqueta(s)",
+                text_color="#1f538d"
+            )
+            self.btn_gerar.configure(state="normal")
+        else:
+            self.lbl_status.configure(text="Nenhum item na lista.", text_color="#c0392b")
+            self.btn_gerar.configure(state="disabled")
 
     def ao_selecionar_item(self, event):
         selected_items = self.tree.selection()
@@ -242,7 +305,6 @@ class AppEtiquetas(ctk.CTk):
         self.item_selecionado_index = index
         prod = self.produtos[index]
 
-        # Limpa e preenche os campos do painel de edição
         self.entry_cod_interno.delete(0, tk.END)
         self.entry_cod_interno.insert(0, prod.get('cod_interno', ''))
 
@@ -252,54 +314,91 @@ class AppEtiquetas(ctk.CTk):
         self.entry_qtd.delete(0, tk.END)
         self.entry_qtd.insert(0, str(prod.get('qtd', 1)))
 
-        self.btn_salvar_item.configure(state="normal")
+        self.btn_excluir_item.configure(state="normal")
+
+    def preparar_novo_item(self):
+        """Limpa os campos para inserção manual de um novo produto."""
+        self.item_selecionado_index = None
+        self.tree.selection_remove(self.tree.selection())
+
+        self.entry_cod_interno.delete(0, tk.END)
+        self.entry_nome.delete(0, tk.END)
+        self.entry_qtd.delete(0, tk.END)
+        self.entry_qtd.insert(0, "1")
+
+        self.entry_cod_interno.focus()
+        self.btn_excluir_item.configure(state="disabled")
 
     def salvar_alteracao_item(self):
-        if self.item_selecionado_index is None:
+        cod_int = self.entry_cod_interno.get().strip()
+        nome_val = self.entry_nome.get().strip()
+        qtd_str = self.entry_qtd.get().strip()
+
+        if not cod_int or not nome_val:
+            messagebox.showwarning("Aviso", "Preencha ao menos o Código Interno e a Descrição.")
             return
 
-        idx = self.item_selecionado_index
-        
         try:
-            qtd_val = int(self.entry_qtd.get().strip())
+            qtd_val = int(qtd_str)
         except ValueError:
             messagebox.showwarning("Aviso", "Quantidade deve ser um número inteiro válido.")
             return
 
-        # Atualiza a lista em memória
-        novo_nome = self.entry_nome.get().strip()
-        self.produtos[idx]['cod_interno'] = self.entry_cod_interno.get().strip()
-        self.produtos[idx]['nome'] = novo_nome
-        self.produtos[idx]['descricao'] = novo_nome
-        self.produtos[idx]['qtd'] = qtd_val
+        if self.item_selecionado_index is not None:
+            idx = self.item_selecionado_index
+            self.produtos[idx]['cod_interno'] = cod_int
+            self.produtos[idx]['nome'] = nome_val
+            self.produtos[idx]['descricao'] = nome_val
+            self.produtos[idx]['qtd'] = qtd_val
+        else:
+            novo_prod = {
+                "codigo": cod_int,
+                "cod_interno": cod_int,
+                "nome": nome_val,
+                "descricao": nome_val,
+                "qtd": qtd_val,
+                "fornecedor": ""
+            }
+            self.produtos.append(novo_prod)
 
-        # Atualiza a tabela gráfica
         self.atualizar_tabela()
+        self.atualizar_resumo_e_botoes()
+        self.preparar_novo_item()
 
-        # Atualiza o resumo
-        total_etiquetas = sum(p['qtd'] for p in self.produtos)
-        self.lbl_status.configure(
-            text=f"Item #{idx+1} atualizado! Total etiquetas: {total_etiquetas}",
-            text_color="#2fa572"
+    def excluir_item_selecionado(self):
+        if self.item_selecionado_index is None:
+            return
+
+        idx = self.item_selecionado_index
+        nome_prod = self.produtos[idx].get('nome', 'o item selecionado')
+
+        confirmar = messagebox.askyesno(
+            "Confirmar Exclusão", 
+            f"Deseja realmente remover '{nome_prod}' da lista de etiquetas?"
         )
+
+        if confirmar:
+            self.produtos.pop(idx)
+            self.item_selecionado_index = None
+            
+            self.atualizar_tabela()
+            self.atualizar_resumo_e_botoes()
+            self.preparar_novo_item()
 
     def gerar_etiquetas(self):
         if not self.produtos:
-            messagebox.showwarning("Aviso", "Nenhum produto carregado.")
+            messagebox.showwarning("Aviso", "Nenhum produto na lista para gerar etiquetas.")
             return
 
         try:
-            # 1. Cria a pasta 'PDFs_Etiquetas' caso ela ainda não exista
             pasta_destino = "PDFs_Etiquetas"
             if not os.path.exists(pasta_destino):
                 os.makedirs(pasta_destino)
 
-            # 2. Gera o nome do arquivo com data e horário atual (ex: etiquetas_20260928_152117.pdf)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             nome_arquivo = f"etiquetas_{timestamp}.pdf"
             caminho_completo_pdf = os.path.join(pasta_destino, nome_arquivo)
 
-            # 3. Cria o PDF no caminho especificado
             criar_pdf_etiquetas(self.produtos, arquivo_saida=caminho_completo_pdf)
 
             total_etiquetas = sum(p['qtd'] for p in self.produtos)
@@ -308,7 +407,6 @@ class AppEtiquetas(ctk.CTk):
                 text_color="#2fa572"
             )
 
-            # 4. Abre o arquivo PDF gerado no leitor padrão do Windows
             if os.path.exists(caminho_completo_pdf):
                 os.startfile(caminho_completo_pdf)
 
